@@ -2,7 +2,8 @@ import {NestFactory} from '@nestjs/core';
 import {AppModule} from '@/app.module';
 import {setupAll} from '@/setup'
 import {ConfigService} from "@nestjs/config";
-import {ApplicationConfigKey} from "@/common/enum.common";
+import {ApplicationConfigKey, JwtConfigKey} from "@/common/enum.common";
+import {timeTextToSecond} from "@/utils/time";
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);

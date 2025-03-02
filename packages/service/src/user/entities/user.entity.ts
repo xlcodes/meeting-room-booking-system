@@ -32,9 +32,6 @@ export class UserEntity {
     })
     email: string;
 
-    @Column({length: 50, comment: "用户邮箱", nullable: true})
-    phone: string;
-
     @Column({length: 100, comment: "用户头像", nullable: true})
     avatar: string;
 

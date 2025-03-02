@@ -28,3 +28,10 @@ export enum NodemailerConfigKey {
     auth_user ='nodemailer_auth_user',
     auth_pass = 'nodemailer_auth_pass',
 }
+
+export enum JwtConfigKey {
+    secret = 'jwt_secret',
+    expiresIn = 'jwt_expires_in',
+    accessTokenExpiresIn = 'jwt_access_token_expires_in',
+    refreshTokenExpiresIn = 'jwt_refresh_token_expires_in',
+}

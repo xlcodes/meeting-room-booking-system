@@ -5,7 +5,12 @@ import {RedisModule} from '@/redis/redis.module';
 import {EmailModule} from '@/email/email.module';
 import {CaptchaModule} from '@/captcha/captcha.module';
 import {ConfigModule, ConfigService} from "@nestjs/config";
-import {MysqlConfigKey} from "@/common/enum.common";
+import {JwtConfigKey, MysqlConfigKey} from "@/common/enum.common";
+import {JwtModule} from "@nestjs/jwt";
+import {APP_GUARD} from "@nestjs/core";
+import {LoginGuard} from "@/common/guard/login.guard";
+import {AppController} from "@/app.controller";
+import {PermissionGuard} from "@/common/guard/permission.guard";
 
 @Module({
     imports: [
@@ -29,13 +34,31 @@ import {MysqlConfigKey} from "@/common/enum.common";
             isGlobal: true,
             envFilePath: 'src/.env',
         }),
+        JwtModule.registerAsync({
+            global: true,
+            useFactory: (configService: ConfigService) => ({
+                secret: configService.get(JwtConfigKey.secret),
+                signOptions: {
+                    expiresIn: configService.get(JwtConfigKey.expiresIn),
+                },
+            }),
+            inject: [ConfigService],
+        }),
         UserModule,
         RedisModule,
         EmailModule,
         CaptchaModule
     ],
-    controllers: [],
-    providers: [],
+    controllers: [AppController],
+    providers: [
+        {
+            provide: APP_GUARD,
+            useClass: LoginGuard,
+        }, {
+            provide: APP_GUARD,
+            useClass: PermissionGuard,
+        }
+    ],
 })
 export class AppModule {
 }
