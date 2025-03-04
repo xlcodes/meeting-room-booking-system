@@ -5,6 +5,7 @@ import {PermissionEntity} from "@/user/entities/permission.entity";
 import {JwtService} from "@nestjs/jwt";
 import {Request} from 'express'
 import {REQUIRE_LOGIN} from "@/common/constant.common";
+import {UnLoginException} from "@/common/filter/un-login.filter";
 
 interface JwtUserData {
     uid: number;
@@ -47,7 +48,7 @@ export class LoginGuard implements CanActivate {
         const authorization = request.headers.authorization;
 
         if (!authorization) {
-            throw new UnauthorizedException('用户未登录！');
+            throw new UnLoginException('用户未登录！');
         }
 
         try {

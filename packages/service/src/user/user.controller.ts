@@ -1,7 +1,12 @@
 import {
     Controller,
     Post,
-    Body, Inject, Get, Query, UnauthorizedException,
+    Body,
+    Inject,
+    Get,
+    Query,
+    UnauthorizedException,
+    DefaultValuePipe,
 } from '@nestjs/common';
 import {UserService} from '@/user/user.service';
 import {RegisterUserDto} from "@/user/dto/register-user.dto";
@@ -10,6 +15,7 @@ import {JwtService} from "@nestjs/jwt";
 import {RequireLogin, UserInfo} from "@/common/decorator/custom.decorator";
 import {UpdateUserPasswordDto} from "@/user/dto/update-user-password.dto";
 import {UpdateUserDto} from "@/user/dto/update-user.dto";
+import {generateParseIntPipe} from "@/utils/custom-parse-pipe";
 
 @Controller('user')
 export class UserController {
@@ -76,12 +82,29 @@ export class UserController {
     @Post('update_pwd')
     @RequireLogin()
     async updatePassword(@UserInfo('uid') uid: number, @Body() dto: UpdateUserPasswordDto) {
-        return  await this.userService.updatePassword(uid, dto);
+        return await this.userService.updatePassword(uid, dto);
     }
 
     @Post('update')
     @RequireLogin()
     async update(@UserInfo('uid') uid: number, @Body() dto: UpdateUserDto) {
-        return  await this.userService.update(uid, dto);
+        return await this.userService.update(uid, dto);
+    }
+
+    @Post('freeze')
+    @RequireLogin()
+    async freeze(@Query('id') id: number) {
+        return await this.userService.freeze(id);
+    }
+
+    @Get('list')
+    async list(
+        @Query('pageNo', new DefaultValuePipe(1), generateParseIntPipe('pageNo')) pageNo: number,
+        @Query('pageSize', new DefaultValuePipe(10), generateParseIntPipe('pageSize')) pageSize: number,
+        @Query('username') username: string,
+        @Query('nickName') nickName: string,
+        @Query('email') email: string
+    ) {
+        return await this.userService.findUserByPage({username, nickName, email}, {pageNo, pageSize});
     }
 }

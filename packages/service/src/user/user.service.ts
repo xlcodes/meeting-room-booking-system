@@ -1,6 +1,6 @@
 import {BadRequestException, Inject, Injectable, Logger} from '@nestjs/common';
 import {InjectRepository} from "@nestjs/typeorm";
-import {Repository} from "typeorm";
+import {Like, Repository} from "typeorm";
 import {UserEntity} from "@/user/entities/user.entity";
 import {RegisterUserDto} from "@/user/dto/register-user.dto";
 import {RedisService} from "@/redis/redis.service";
@@ -17,6 +17,7 @@ import {timeTextToSecond} from "@/utils/time";
 import {UserInfoVo} from "@/user/vo/info-user.vo";
 import {UpdateUserPasswordDto} from "@/user/dto/update-user-password.dto";
 import {UpdateUserDto} from "@/user/dto/update-user.dto";
+import {QueryPageParams, QueryUserParams} from "@/common/type";
 
 @Injectable()
 export class UserService {
@@ -277,11 +278,11 @@ export class UserService {
 
         const foundUser = await this.userRepository.findOneBy({uid});
 
-        if(dto.nickName) {
+        if (dto.nickName) {
             foundUser.nickName = dto.nickName;
         }
 
-        if(dto.avatar) {
+        if (dto.avatar) {
             foundUser.avatar = dto.avatar;
         }
 
@@ -291,6 +292,66 @@ export class UserService {
         } catch (err) {
             this.logger.error(err, UserService.name);
             return '修改用户信息失败';
+        }
+    }
+
+    async freeze(id: number) {
+        const foundUser = await this.userRepository.findOneBy({uid: id});
+
+        if (!foundUser) {
+            throw new BadRequestException('当前用户不存在！');
+        }
+
+        if (foundUser.isAdmin) {
+            throw new BadRequestException('管理员不能被冻结！');
+        }
+
+        if (foundUser.isFrozen) {
+            throw new BadRequestException('用户已被冻结！');
+        }
+
+        foundUser.isFrozen = true;
+
+        try {
+            await this.userRepository.save(foundUser);
+            return `冻结用户【${foundUser.nickName || foundUser.username}】成功！`;
+        } catch (err) {
+            this.logger.error(err, UserService.name);
+            return `冻结用户【${foundUser.nickName || foundUser.username}】失败！`;
+        }
+    }
+
+    async findUserByPage(userParams: QueryUserParams, pageParams: QueryPageParams) {
+        const {username, nickName, email} = userParams;
+        const {pageNo, pageSize} = pageParams;
+
+        const skipCount = (pageNo - 1) * pageSize;
+
+        const condition: Record<string, any> = {};
+        if (username) {
+            condition.username = Like(`%${username}%`)
+        }
+        if (nickName) {
+            condition.nickName = Like(`%${nickName}%`)
+        }
+        if (email) {
+            condition.email = Like(`%${email}%`)
+        }
+
+        const [list, total] = await this.userRepository.findAndCount({
+            select: ['uid', 'username', 'nickName', 'email', 'phoneNumber', 'isFrozen', 'avatar', 'createAt', 'updateAt'],
+            skip: skipCount,
+            take: pageSize,
+            where: condition,
+        })
+
+        return {
+            list,
+            pageInfo: {
+                pageNo,
+                pageSize,
+                total,
+            }
         }
     }
 }
