@@ -1,4 +1,4 @@
-import { Request } from 'express';
+import {Request} from 'express';
 import {createParamDecorator, ExecutionContext, SetMetadata} from "@nestjs/common";
 import {REQUIRE_LOGIN, REQUIRE_PERMISSION} from "@/common/constant.common";
 
@@ -9,7 +9,7 @@ export const RequirePermission = (...permissions: string[]) => SetMetadata(REQUI
 export const UserInfo = createParamDecorator((key: string, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest<Request>();
 
-    if(!request.user) {
+    if (!request.user) {
         return null;
     }
 

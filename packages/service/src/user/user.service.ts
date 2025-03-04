@@ -14,6 +14,9 @@ import {PermissionEntity} from "@/user/entities/permission.entity";
 import {JwtService} from "@nestjs/jwt";
 import {ConfigService} from "@nestjs/config";
 import {timeTextToSecond} from "@/utils/time";
+import {UserInfoVo} from "@/user/vo/info-user.vo";
+import {UpdateUserPasswordDto} from "@/user/dto/update-user-password.dto";
+import {UpdateUserDto} from "@/user/dto/update-user.dto";
 
 @Injectable()
 export class UserService {
@@ -94,7 +97,7 @@ export class UserService {
     }
 
     async generateAccessToken(user: LoginUserVo) {
-        const token =  this.jwtService.sign({
+        const token = this.jwtService.sign({
             uid: user.userInfo.uid,
             username: user.userInfo.username,
             roles: user.userInfo.roles,
@@ -177,6 +180,23 @@ export class UserService {
         return await this.generateLoginUserVo(user);
     }
 
+    async findUserDetailByUid(uid: number) {
+        const user = await this.userRepository.findOne({
+            where: {
+                uid,
+            },
+            relations: ['roles', 'roles.permissions']
+        });
+
+        const vo = new UserInfoVo();
+
+        ;['uid', 'username', 'nickName', 'email', 'avatar', 'phoneNumber', 'isAdmin', 'isFrozen', 'createAt', 'updateAt', 'deleteAt'].forEach(key => {
+            vo[key] = user[key];
+        })
+
+        return vo;
+    }
+
     async findUserByUsername(username: string) {
         try {
             return await this.userRepository.findOneBy({
@@ -227,5 +247,50 @@ export class UserService {
         }
 
         return this.generateLoginUserVo(user, true);
+    }
+
+    async updatePassword(uid: number, dto: UpdateUserPasswordDto) {
+        // 验证校验码
+        await this.captchaService.checkCaptcha(`${CAPTCHA_TYPE.UPDATE_PWD}_${dto.email}`, dto.captcha);
+
+        const foundUser = await this.userRepository.findOneBy({uid});
+
+        if (!foundUser) {
+            throw new BadRequestException('当前用户不存在');
+        }
+
+        foundUser.password = md5(dto.password);
+
+        try {
+            await this.userRepository.save(foundUser);
+            return '修改密码成功';
+        } catch (err) {
+            this.logger.error(err, UserService.name);
+            return '修改密码失败';
+        }
+
+    }
+
+    async update(uid: number, dto: UpdateUserDto) {
+        // 验证校验码
+        await this.captchaService.checkCaptcha(`${CAPTCHA_TYPE.UPDATE_PWD}_${dto.email}`, dto.captcha);
+
+        const foundUser = await this.userRepository.findOneBy({uid});
+
+        if(dto.nickName) {
+            foundUser.nickName = dto.nickName;
+        }
+
+        if(dto.avatar) {
+            foundUser.avatar = dto.avatar;
+        }
+
+        try {
+            await this.userRepository.save(foundUser);
+            return '修改用户信息成功';
+        } catch (err) {
+            this.logger.error(err, UserService.name);
+            return '修改用户信息失败';
+        }
     }
 }

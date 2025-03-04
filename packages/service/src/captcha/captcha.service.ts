@@ -2,7 +2,7 @@ import {BadRequestException, Inject, Injectable} from '@nestjs/common';
 import {EmailQueryDto} from "@/email/dto/email-query.dto";
 import {EmailService} from "@/email/email.service";
 import {RedisService} from "@/redis/redis.service";
-import {CAPTCHA_TYPE} from "@/common/enum.common";
+import {CAPTCHA_TYPE, CAPTCHA_TYPE_TEXT} from "@/common/enum.common";
 
 @Injectable()
 export class CaptchaService {
@@ -32,28 +32,47 @@ export class CaptchaService {
         return true
     }
 
-    /**
-     * 用户注册验证码
-     * @param data.email 用户注册邮箱
-     * @return '发送成功！' | '验证码已发送，请稍后再试！'
-     */
-    async userRegister(data: EmailQueryDto) {
-        const {email} = data;
+    async sendCaptcha(email: string, type: CAPTCHA_TYPE) {
         const code = Math.random().toString().slice(2, 8);
-
-        const redisCode = await this.redisService.get(`${CAPTCHA_TYPE.REGISTER}_${email}`);
-
+        const redisCode = await this.redisService.get(`${type}_${email}`);
         if (redisCode) {
-            return '验证码已发送，请稍后再试！';
+            return '验证码已发送！';
         }
 
-        await this.redisService.set(`${CAPTCHA_TYPE.REGISTER}_${email}`, code, 5 * 60);
+        await this.redisService.set(`${type}_${email}`, code, 5 * 60);
 
         await this.emailService.sendEmail({
             to: email,
-            subject: '注册验证码',
-            html: `<p>您的注册验证码为：${code}，有效期5分钟！</p>`,
+            subject: `${CAPTCHA_TYPE_TEXT[type]}验证码`,
+            html: `<p>您的${CAPTCHA_TYPE_TEXT[type]}验证码为：${code}，有效期5分钟！</p>`,
         });
         return '发送成功！';
+    }
+
+    /**
+     * 用户注册验证码
+     * @param data.email 用户注册邮箱
+     * @return '发送成功！' | '验证码已发送！'
+     */
+    async userRegister(data: EmailQueryDto) {
+        return await this.sendCaptcha(data.email, CAPTCHA_TYPE.REGISTER);
+    }
+
+    /**
+     * 用户修改密码验证码
+     * @param data.email 用户邮箱
+     * @return '发送成功！' | '验证码已发送！'
+     */
+    async userUpdatePwd(data: EmailQueryDto) {
+        return await this.sendCaptcha(data.email, CAPTCHA_TYPE.UPDATE_PWD);
+    }
+
+    /**
+     * 用户信息修改验证码
+     * @param data.email 用户邮箱
+     * @return '发送成功！' | '验证码已发送！'
+     */
+    async userUpdateInfo(data: EmailQueryDto) {
+        return await this.sendCaptcha(data.email, CAPTCHA_TYPE.UPDATE_USER);
     }
 }

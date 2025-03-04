@@ -7,6 +7,9 @@ import {UserService} from '@/user/user.service';
 import {RegisterUserDto} from "@/user/dto/register-user.dto";
 import {LoginUserDto} from "@/user/dto/login-user.dto";
 import {JwtService} from "@nestjs/jwt";
+import {RequireLogin, UserInfo} from "@/common/decorator/custom.decorator";
+import {UpdateUserPasswordDto} from "@/user/dto/update-user-password.dto";
+import {UpdateUserDto} from "@/user/dto/update-user.dto";
 
 @Controller('user')
 export class UserController {
@@ -29,14 +32,12 @@ export class UserController {
 
     @Post('login')
     async userLogin(@Body() dto: LoginUserDto) {
-        const user = await this.userService.login(dto);
-        return user;
+        return await this.userService.login(dto);
     }
 
     @Post('admin/login')
     async adminLogin(@Body() dto: LoginUserDto) {
-        const user = await this.userService.login(dto, true);
-        return user;
+        return await this.userService.login(dto, true);
     }
 
     async verifyToken(token: string, isAdmin: boolean = false) {
@@ -64,5 +65,23 @@ export class UserController {
     @Get('admin/refresh')
     async adminRefresh(@Query('token') token: string) {
         return this.verifyToken(token, true);
+    }
+
+    @Get('info')
+    @RequireLogin()
+    async info(@UserInfo('uid') uid: number) {
+        return await this.userService.findUserDetailByUid(uid);
+    }
+
+    @Post('update_pwd')
+    @RequireLogin()
+    async updatePassword(@UserInfo('uid') uid: number, @Body() dto: UpdateUserPasswordDto) {
+        return  await this.userService.updatePassword(uid, dto);
+    }
+
+    @Post('update')
+    @RequireLogin()
+    async update(@UserInfo('uid') uid: number, @Body() dto: UpdateUserDto) {
+        return  await this.userService.update(uid, dto);
     }
 }
