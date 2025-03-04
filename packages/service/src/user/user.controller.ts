@@ -16,6 +16,7 @@ import {RequireLogin, UserInfo} from "@/common/decorator/custom.decorator";
 import {UpdateUserPasswordDto} from "@/user/dto/update-user-password.dto";
 import {UpdateUserDto} from "@/user/dto/update-user.dto";
 import {generateParseIntPipe} from "@/utils/custom-parse-pipe";
+import {ApiQuery} from "@nestjs/swagger";
 
 @Controller('user')
 export class UserController {
@@ -97,6 +98,21 @@ export class UserController {
         return await this.userService.freeze(id);
     }
 
+
+    @ApiQuery({
+        name: 'pageNo',
+        type: 'number',
+        description: '页码',
+        required: true,
+        example: 1
+    })
+    @ApiQuery({
+        name: 'pageSize',
+        type: 'number',
+        description: '数据条数',
+        required: true,
+        example: 10
+    })
     @Get('list')
     async list(
         @Query('pageNo', new DefaultValuePipe(1), generateParseIntPipe('pageNo')) pageNo: number,
