@@ -273,7 +273,7 @@ export class UserService {
 
     async update(uid: number, dto: UpdateUserDto) {
         // 验证校验码
-        await this.captchaService.checkCaptcha(`${CAPTCHA_TYPE.UPDATE_PWD}_${dto.email}`, dto.captcha);
+        await this.captchaService.checkCaptcha(`${CAPTCHA_TYPE.UPDATE_USER}_${dto.email}`, dto.captcha);
 
         const foundUser = await this.userRepository.findOneBy({uid});
 
