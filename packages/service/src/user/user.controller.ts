@@ -42,7 +42,7 @@ export class UserController {
         return await this.userService.login(dto);
     }
 
-    @Post('admin/login')
+    @Post('admin/Login')
     async adminLogin(@Body() dto: LoginUserDto) {
         return await this.userService.login(dto, true);
     }
